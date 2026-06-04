@@ -80,6 +80,7 @@ def decode_github_file_content(file_data: dict) -> str | None:
 def get_important_files(owner: str, repo: str) -> list:
     important_paths = [
         "README.md",
+        "README",
         "package.json",
         "requirements.txt",
         ".env.example",
@@ -88,26 +89,100 @@ def get_important_files(owner: str, repo: str) -> list:
     ]
 
     results = []
+    seen_logical_names = set()
 
     for path in important_paths:
+        logical_name = "README" if path.lower() in ["readme", "readme.md"] else path
+
+        if logical_name in seen_logical_names:
+            continue
+
         file_data = get_file_content(owner, repo, path)
 
         if not file_data.get("exists", True):
-            results.append({
-                "path": path,
-                "exists": False,
-                "content": None
-            })
             continue
 
         decoded_content = decode_github_file_content(file_data)
 
         results.append({
             "path": path,
+            "logical_name": logical_name,
             "exists": True,
             "size": file_data.get("size"),
             "type": file_data.get("type"),
             "content": decoded_content[:3000] if decoded_content else None
         })
+
+        seen_logical_names.add(logical_name)
+
+    for path in important_paths:
+        logical_name = "README" if path.lower() in ["readme", "readme.md"] else path
+
+        if logical_name not in seen_logical_names:
+            results.append({
+                "path": path,
+                "logical_name": logical_name,
+                "exists": False,
+                "content": None
+            })
+            seen_logical_names.add(logical_name)
+
+    return results
+
+    
+
+
+def get_directory_contents(owner: str, repo: str, path: str) -> list:
+    url = f"{GITHUB_API_BASE}/repos/{owner}/{repo}/contents/{path}"
+
+    response = httpx.get(url, headers=get_github_headers(), timeout=20.0)
+
+    if response.status_code == 404:
+        return []
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch directory contents: {path}")
+
+    data = response.json()
+
+    if isinstance(data, list):
+        return data
+
+    return []
+
+
+def get_github_workflow_files(owner: str, repo: str) -> list:
+    workflow_dir = ".github/workflows"
+    workflow_items = get_directory_contents(owner, repo, workflow_dir)
+
+    results = []
+
+    for item in workflow_items:
+        if item.get("type") != "file":
+            continue
+
+        path = item.get("path")
+
+        try:
+            file_data = get_file_content(owner, repo, path)
+            decoded_content = decode_github_file_content(file_data)
+
+            results.append({
+                "name": item.get("name"),
+                "path": path,
+                "exists": True,
+                "size": file_data.get("size"),
+                "type": file_data.get("type"),
+                "content": decoded_content[:5000] if decoded_content else None
+            })
+        except Exception:
+            results.append({
+                "name": item.get("name"),
+                "path": path,
+                "exists": False,
+                "size": None,
+                "type": "file",
+                "content": None
+            })
 
     return results
