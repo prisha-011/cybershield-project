@@ -1,6 +1,6 @@
 # CyberShield Backend
 
-Backend for the CyberShield Agent hackathon project.
+Backend for the CyberShield Agent project.
 
 ## Run
 uvicorn app.main:app --reload
