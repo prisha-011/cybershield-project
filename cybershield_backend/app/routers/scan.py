@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from cybershield_backend.app.config import settings
-from cybershield_backend.app.models.scan import ScanRequest
+from cybershield_backend.app.models.scan import ScanCreate
 from cybershield_backend.app.models.scan_response import ScanResponse
 from cybershield_backend.app.services.ai_service import get_ai_security_findings
 from cybershield_backend.app.services.findings_service import analyze_repository_files
@@ -43,7 +43,7 @@ async def fetch_saved_scan_by_id(scan_id: str):
     return scan
 
 @router.post("/scan", response_model=ScanResponse)
-async def scan_repository(payload: ScanRequest):
+async def scan_repository(payload: ScanCreate):
     try:
         parsed_repo = parse_github_repo_url(str(payload.repo_url))
     except ValueError as e:

@@ -1,5 +1,5 @@
 from typing import List, Literal
-
+# from typing import Optional
 from pydantic import BaseModel
 
 
@@ -46,6 +46,7 @@ class FindingsSummaryResponse(BaseModel):
 
 
 class ScanResponse(BaseModel):
+    scan_id: str | None = None
     message: str
     repo_url: str
     owner: str
