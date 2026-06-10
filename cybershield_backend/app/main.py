@@ -1,5 +1,7 @@
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
+
 from cybershield_backend.app.config import settings
 from cybershield_backend.app.routers.scan import router as scan_router
 from database.connection import connect_to_mongo, close_mongo_connection, get_database
@@ -18,6 +20,7 @@ app = FastAPI(
 )
 
 app.include_router(scan_router)
+
 
 @app.get("/")
 async def root():

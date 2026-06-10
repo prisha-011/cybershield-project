@@ -29,7 +29,7 @@ async def close_mongo_connection():
     global client, db
 
     if client is not None:
-        client.close()
+        await client.close()
         client = None
         db = None
         print("MongoDB connection closed.")
