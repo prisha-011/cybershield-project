@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-from app.services.findings_persistence_service import (
+from cybershield_backend.app.services.findings_persistence_service import (
     get_findings_by_repo,
     get_findings_by_scan_id,
     get_high_severity_findings,
