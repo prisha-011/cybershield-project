@@ -1,45 +1,17 @@
 import json
-from fastapi import HTTPException
-from google import genai
+
+import requests
+
 from cybershield_backend.app.config import settings
 
 
-def normalize_ai_findings(ai_findings: list) -> list:
-    normalized = []
-
-    for item in ai_findings:
-        if not isinstance(item, dict):
-            continue
-
-        severity = str(item.get("severity", "low")).lower().strip()
-        if severity not in {"high", "medium", "low", "info"}:
-            severity = "low"
-
-        normalized.append(
-            {
-                "severity": severity,
-                "type": item.get("type", "ai_generated_finding"),
-                "title": item.get("title", "AI-generated finding"),
-                "description": item.get("description", "No description provided."),
-                "remediation": item.get("remediation"),
-                "source": "ai",
-            }
-        )
-
-    return normalized
+GEMINI_API_URL = (
+    "https://generativelanguage.googleapis.com/v1beta/models/"
+    "gemini-1.5-flash:generateContent"
+)
 
 
-def get_gemini_client():
-    if not settings.GEMINI_API_KEY:
-        raise HTTPException(
-            status_code=500,
-            detail="GEMINI_API_KEY is not configured.",
-        )
-
-    return genai.Client(api_key=settings.GEMINI_API_KEY)
-
-
-def build_security_prompt(
+def build_ai_prompt(
     owner: str,
     repo: str,
     metadata: dict,
@@ -47,44 +19,53 @@ def build_security_prompt(
     workflow_files: list,
     rule_findings: list,
 ) -> str:
-    prompt = f"""
-You are a cybersecurity code review assistant.
+    return f"""
+You are a cybersecurity audit assistant.
 
-Analyze this GitHub repository evidence and return additional security findings.
+Analyze this GitHub repository and return a JSON array of additional security findings.
 
-Repository:
-- Owner: {owner}
-- Repo: {repo}
-- Default branch: {metadata.get("default_branch")}
-- Primary language: {metadata.get("language")}
+Repository owner: {owner}
+Repository name: {repo}
+Metadata: {json.dumps(metadata, default=str)}
+Important files: {json.dumps(important_files, default=str)}
+Workflow files: {json.dumps(workflow_files, default=str)}
+Existing rule-based findings: {json.dumps(rule_findings, default=str)}
 
-Rule-based findings already detected:
-{json.dumps(rule_findings, indent=2)}
+Return only a JSON array.
+Each finding must have:
+- severity: one of high, medium, low, info
+- type: short machine-friendly category
+- title: short title
+- description: concise explanation
+- remediation: short fix recommendation
+- source: ai
+""".strip()
 
-Important files:
-{json.dumps(important_files, indent=2)}
 
-Workflow files:
-{json.dumps(workflow_files, indent=2)}
+def extract_json_array(text: str):
+    text = text.strip()
 
-Return output only as valid JSON in this format:
-[
-  {{
-    "severity": "high|medium|low|info",
-    "type": "short_machine_name",
-    "title": "Short finding title",
-    "description": "What is risky and why",
-    "remediation": "How to fix it"
-  }}
-]
+    if text.startswith("```"):
+        lines = text.splitlines()
+        lines = [line for line in lines if not line.strip().startswith("```")]
+        text = "\n".join(lines).strip()
 
-Rules:
-- Return only JSON.
-- Do not include markdown.
-- Do not repeat the exact same findings unless you add new value.
-- Focus on secrets exposure, insecure CI/CD, unsafe dependency practices, missing validation, risky config, and obvious security weaknesses.
-"""
-    return prompt
+    start = text.find("[")
+    end = text.rfind("]")
+
+    if start == -1 or end == -1 or end < start:
+        return []
+
+    json_text = text[start:end + 1]
+
+    try:
+        data = json.loads(json_text)
+        if isinstance(data, list):
+            return data
+    except Exception:
+        return []
+
+    return []
 
 
 def get_ai_security_findings(
@@ -95,62 +76,81 @@ def get_ai_security_findings(
     workflow_files: list,
     rule_findings: list,
 ) -> dict:
+    if not settings.GEMINI_API_KEY:
+        return {
+            "status": "skipped",
+            "error": "GEMINI_API_KEY not configured",
+            "findings": [],
+        }
+
+    prompt = build_ai_prompt(
+        owner=owner,
+        repo=repo,
+        metadata=metadata,
+        important_files=important_files,
+        workflow_files=workflow_files,
+        rule_findings=rule_findings,
+    )
+
     try:
-        client = get_gemini_client()
-
-        prompt = build_security_prompt(
-            owner=owner,
-            repo=repo,
-            metadata=metadata,
-            important_files=important_files,
-            workflow_files=workflow_files,
-            rule_findings=rule_findings,
+        response = requests.post(
+            f"{GEMINI_API_URL}?key={settings.GEMINI_API_KEY}",
+            headers={"Content-Type": "application/json"},
+            json={
+                "contents": [
+                    {
+                        "parts": [
+                            {"text": prompt}
+                        ]
+                    }
+                ]
+            },
+            timeout=45,
         )
+        response.raise_for_status()
 
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt,
-        )
+        data = response.json()
+        candidates = data.get("candidates", [])
 
-        text = (response.text or "").strip()
-
-        if not text:
+        if not candidates:
             return {
-                "findings": [],
-                "status": "empty_response",
-                "error": "Gemini returned an empty response.",
-            }
-
-        if text.startswith("```json"):
-            text = text.replace("```json", "", 1).strip()
-        if text.startswith("```"):
-            text = text.replace("```", "", 1).strip()
-        if text.endswith("```"):
-            text = text[:-3].strip()
-
-        parsed = json.loads(text)
-
-        if isinstance(parsed, list):
-            return {
-                "findings": normalize_ai_findings(parsed),
-                "status": "success",
+                "status": "completed",
                 "error": None,
+                "findings": [],
             }
+
+        text = (
+            candidates[0]
+            .get("content", {})
+            .get("parts", [{}])[0]
+            .get("text", "")
+        )
+
+        findings = extract_json_array(text)
+
+        cleaned_findings = []
+        for finding in findings:
+            if not isinstance(finding, dict):
+                continue
+
+            cleaned_findings.append({
+                "severity": str(finding.get("severity", "info")).lower(),
+                "type": str(finding.get("type", "general")),
+                "title": str(finding.get("title", "Untitled AI finding")),
+                "description": str(finding.get("description", "")),
+                "remediation": finding.get("remediation"),
+                "source": "ai",
+            })
 
         return {
-            "findings": [],
-            "status": "invalid_format",
-            "error": "Gemini response was not a JSON list.",
+            "status": "completed",
+            "error": None,
+            "findings": cleaned_findings,
         }
 
     except Exception as e:
-        error_message = str(e)
-
-        if "429" in error_message or "RESOURCE_EXHAUSTED" in error_message:
-            error_message = "Gemini quota exceeded. AI analysis was skipped."
-
         return {
-            "findings": [],
             "status": "failed",
-            "error": error_message,
+            "error": str(e),
+            "findings": [],
         }
