@@ -28,6 +28,19 @@ def debug_env():
         "gemini_api_key_loaded": bool(settings.GEMINI_API_KEY),
     }
 
+@router.get("/scans")
+async def fetch_saved_scans():
+    return await get_all_saved_scans()
+
+
+@router.get("/scans/{scan_id}")
+async def fetch_saved_scan_by_id(scan_id: str):
+    scan = await get_saved_scan_by_id(scan_id)
+
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan not found")
+
+    return scan
 
 @router.post("/scan", response_model=ScanResponse)
 async def scan_repository(payload: ScanRequest):
