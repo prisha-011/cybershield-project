@@ -1,5 +1,5 @@
-from typing import List, Literal
-# from typing import Optional
+from typing import List, Literal, Optional
+
 from pydantic import BaseModel
 
 
@@ -8,18 +8,18 @@ class FindingResponse(BaseModel):
     type: str
     title: str
     description: str
-    remediation: str | None = None
-    source: Literal["rule", "ai"] = "rule"
+    remediation: Optional[str] = None
+    source: Literal["rule", "ai"]
 
 
 class RepositoryInfoResponse(BaseModel):
-    full_name: str | None = None
-    private: bool | None = None
-    default_branch: str | None = None
-    language: str | None = None
-    stargazers_count: int | None = None
-    forks_count: int | None = None
-    open_issues_count: int | None = None
+    full_name: Optional[str] = None
+    private: Optional[bool] = None
+    default_branch: Optional[str] = None
+    language: Optional[str] = None
+    stargazers_count: Optional[int] = None
+    forks_count: Optional[int] = None
+    open_issues_count: Optional[int] = None
 
 
 class RootContentItemResponse(BaseModel):
@@ -30,11 +30,11 @@ class RootContentItemResponse(BaseModel):
 
 class ImportantFileResponse(BaseModel):
     path: str
-    logical_name: str | None = None
+    logical_name: Optional[str] = None
     exists: bool
-    size: int | None = None
-    type: str | None = None
-    content: str | None = None
+    size: Optional[int] = None
+    type: Optional[str] = None
+    content: Optional[str] = None
 
 
 class FindingsSummaryResponse(BaseModel):
@@ -46,7 +46,7 @@ class FindingsSummaryResponse(BaseModel):
 
 
 class ScanResponse(BaseModel):
-    scan_id: str | None = None
+    scan_id: Optional[str] = None
     message: str
     repo_url: str
     owner: str
@@ -59,6 +59,7 @@ class ScanResponse(BaseModel):
     rule_based_findings: List[FindingResponse]
     ai_findings: List[FindingResponse]
     ai_analysis_status: str
-    ai_analysis_error: str | None = None
+    ai_analysis_error: Optional[str] = None
     findings_summary: FindingsSummaryResponse
     findings: List[FindingResponse]
+    
