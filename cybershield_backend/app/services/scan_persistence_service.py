@@ -3,6 +3,7 @@ from datetime import datetime
 from bson import ObjectId
 from bson.errors import InvalidId
 
+from cybershield_backend.app.services.audit_service import log_audit_event
 from database.collections import get_scan_runs_collection
 
 
@@ -36,6 +37,20 @@ async def save_scan_result(scan_data: dict):
 
     saved_scan["id"] = str(saved_scan["_id"])
     del saved_scan["_id"]
+
+    await log_audit_event(
+        action="scan_completed",
+        resource_type="scan_run",
+        resource_id=saved_scan["id"],
+        status="success",
+        actor={"type": "system", "id": None},
+        details={
+            "repo_url": saved_scan.get("repo_url"),
+            "owner": saved_scan.get("owner"),
+            "repo": saved_scan.get("repo"),
+            "findings_total": saved_scan.get("findings_summary", {}).get("total", 0),
+        },
+    )
 
     return saved_scan
 
