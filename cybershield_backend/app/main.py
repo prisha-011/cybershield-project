@@ -1,22 +1,28 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
+
 from cybershield_backend.app.config import settings
 from cybershield_backend.app.routers.scan import router
-from database.connection import connect_to_mongo, get_database
+from database.connection import connect_to_mongo, close_mongo_connection, get_database
 
 
-app = FastAPI(title=settings.APP_NAME)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await connect_to_mongo()
+    yield
+    await close_mongo_connection()
 
+
+app = FastAPI(
+    title=settings.APP_NAME,
+    lifespan=lifespan
+)
 
 app.include_router(router)
 
 
-@app.on_event("startup")
-def startup_db():
-    connect_to_mongo()
-
-
 @app.get("/")
-def root():
+async def root():
     return {
         "message": f"{settings.APP_NAME} is running",
         "environment": settings.APP_ENV
@@ -24,7 +30,7 @@ def root():
 
 
 @app.get("/health")
-def health_check():
+async def health_check():
     db = get_database()
 
     return {
@@ -37,7 +43,7 @@ def health_check():
 
 
 @app.get("/api/db-test")
-def test_db():
+async def test_db():
     db = get_database()
 
     if db is None:
