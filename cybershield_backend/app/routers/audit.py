@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-from app.services.audit_read_service import (
+from cybershield_backend.app.services.audit_read_service import (
     get_all_audit_logs,
     get_audit_logs_by_action,
     get_audit_logs_by_resource,
