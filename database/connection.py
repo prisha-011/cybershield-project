@@ -1,6 +1,6 @@
 from pymongo import AsyncMongoClient
-from database.config import MONGODB_URI, MONGODB_DB_NAME
 
+from database.config import MONGODB_DB_NAME, MONGODB_URI
 
 client = None
 db = None
@@ -10,7 +10,10 @@ async def connect_to_mongo():
     global client, db
 
     try:
-        client = AsyncMongoClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
+        client = AsyncMongoClient(
+            MONGODB_URI,
+            serverSelectionTimeoutMS=5000
+        )
         await client.admin.command("ping")
         db = client[MONGODB_DB_NAME]
         print("Connected to MongoDB successfully!")
@@ -30,6 +33,7 @@ async def close_mongo_connection():
 
     if client is not None:
         await client.close()
-        client = None
-        db = None
-        print("MongoDB connection closed.")
+
+    client = None
+    db = None
+    print("MongoDB connection closed.")
