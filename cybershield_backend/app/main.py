@@ -5,7 +5,7 @@ from cybershield_backend.app.routers.findings import router as findings_router
 from cybershield_backend.app.config import settings
 from cybershield_backend.app.routers.scan import router as scan_router
 from database.connection import connect_to_mongo, close_mongo_connection, get_database
-
+from cybershield_backend.app.routers.audit import router as audit_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -21,7 +21,7 @@ app = FastAPI(
 
 app.include_router(findings_router)
 app.include_router(scan_router)
-
+app.include_router(audit_router)
 
 @app.get("/")
 async def root():
