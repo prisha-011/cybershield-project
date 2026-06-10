@@ -36,11 +36,13 @@ def get_file_content(owner: str, repo: str, path: str) -> dict | None:
     url = f"{GITHUB_API_BASE}/repos/{owner}/{repo}/contents/{path}"
     response = requests.get(url, headers=get_github_headers(), timeout=20)
 
-    if response.status_code == 404:
+    if response.status_code != 200:
         return None
 
-    response.raise_for_status()
-    data = response.json()
+    try:
+        data = response.json()
+    except Exception:
+        return None
 
     content = data.get("content")
     decoded_content = None
