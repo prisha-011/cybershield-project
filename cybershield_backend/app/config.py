@@ -23,7 +23,7 @@ class Settings(BaseSettings):
 
 
 
-print("Using env file:", ENV_FILE)
-print("Env file exists:", ENV_FILE.exists())
+# print("Using env file:", ENV_FILE)
+# print("Env file exists:", ENV_FILE.exists())
 
 settings = Settings()
