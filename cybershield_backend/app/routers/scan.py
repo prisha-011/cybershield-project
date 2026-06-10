@@ -11,6 +11,11 @@ from cybershield_backend.app.services.github_service import (
     get_repository_metadata,
     get_repository_root_contents,
 )
+from cybershield_backend.app.services.scan_persistence_service import (
+    save_scan_result,
+    get_all_saved_scans,
+    get_saved_scan_by_id,
+)
 from cybershield_backend.app.utils.github_parser import parse_github_repo_url
 
 router = APIRouter(prefix="/api", tags=["scan"])
@@ -25,7 +30,7 @@ def debug_env():
 
 
 @router.post("/scan", response_model=ScanResponse)
-def scan_repository(payload: ScanRequest):
+async def scan_repository(payload: ScanRequest):
     try:
         parsed_repo = parse_github_repo_url(str(payload.repo_url))
     except ValueError as e:
