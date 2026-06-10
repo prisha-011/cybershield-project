@@ -1,7 +1,7 @@
 import base64
 import httpx
 from fastapi import HTTPException
-from app.config import settings
+from cybershield_backend.app.config import settings
 
 
 GITHUB_API_BASE = "https://api.github.com"

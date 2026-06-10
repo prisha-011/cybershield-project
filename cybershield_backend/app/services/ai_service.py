@@ -1,7 +1,7 @@
 import json
-from google import genai
 from fastapi import HTTPException
-from app.config import settings
+from google import genai
+from cybershield_backend.app.config import settings
 
 
 def normalize_ai_findings(ai_findings: list) -> list:
@@ -15,21 +15,26 @@ def normalize_ai_findings(ai_findings: list) -> list:
         if severity not in {"high", "medium", "low", "info"}:
             severity = "low"
 
-        normalized.append({
-            "severity": severity,
-            "type": item.get("type", "ai_generated_finding"),
-            "title": item.get("title", "AI-generated finding"),
-            "description": item.get("description", "No description provided."),
-            "remediation": item.get("remediation"),
-            "source": "ai",
-        })
+        normalized.append(
+            {
+                "severity": severity,
+                "type": item.get("type", "ai_generated_finding"),
+                "title": item.get("title", "AI-generated finding"),
+                "description": item.get("description", "No description provided."),
+                "remediation": item.get("remediation"),
+                "source": "ai",
+            }
+        )
 
     return normalized
 
 
 def get_gemini_client():
     if not settings.GEMINI_API_KEY:
-        raise HTTPException(status_code=500, detail="GEMINI_API_KEY is not configured.")
+        raise HTTPException(
+            status_code=500,
+            detail="GEMINI_API_KEY is not configured.",
+        )
 
     return genai.Client(api_key=settings.GEMINI_API_KEY)
 
@@ -64,13 +69,13 @@ Workflow files:
 
 Return output only as valid JSON in this format:
 [
-{{
+  {{
     "severity": "high|medium|low|info",
     "type": "short_machine_name",
     "title": "Short finding title",
     "description": "What is risky and why",
     "remediation": "How to fix it"
-}}
+  }}
 ]
 
 Rules:
@@ -80,7 +85,6 @@ Rules:
 - Focus on secrets exposure, insecure CI/CD, unsafe dependency practices, missing validation, risky config, and obvious security weaknesses.
 """
     return prompt
-
 
 
 def get_ai_security_findings(
@@ -114,7 +118,7 @@ def get_ai_security_findings(
             return {
                 "findings": [],
                 "status": "empty_response",
-                "error": "Gemini returned an empty response."
+                "error": "Gemini returned an empty response.",
             }
 
         if text.startswith("```json"):
@@ -130,13 +134,13 @@ def get_ai_security_findings(
             return {
                 "findings": normalize_ai_findings(parsed),
                 "status": "success",
-                "error": None
+                "error": None,
             }
 
         return {
             "findings": [],
             "status": "invalid_format",
-            "error": "Gemini response was not a JSON list."
+            "error": "Gemini response was not a JSON list.",
         }
 
     except Exception as e:
@@ -148,5 +152,5 @@ def get_ai_security_findings(
         return {
             "findings": [],
             "status": "failed",
-            "error": error_message
+            "error": error_message,
         }

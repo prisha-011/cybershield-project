@@ -1,5 +1,6 @@
+from typing import List, Literal
+
 from pydantic import BaseModel
-from typing import Optional, List, Literal
 
 
 class FindingResponse(BaseModel):
@@ -7,9 +8,8 @@ class FindingResponse(BaseModel):
     type: str
     title: str
     description: str
-    remediation: Optional[str] = None
+    remediation: str | None = None
     source: Literal["rule", "ai"] = "rule"
-
 
 
 class RepositoryInfoResponse(BaseModel):

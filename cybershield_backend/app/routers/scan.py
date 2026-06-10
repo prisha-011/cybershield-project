@@ -1,19 +1,20 @@
 from fastapi import APIRouter, HTTPException
-from app.config import settings
-from app.models.scan import ScanRequest
-from app.models.scan_response import ScanResponse
-from app.services.ai_service import get_ai_security_findings
-from app.services.findings_service import analyze_repository_files
-from app.services.finding_normalizer import normalize_findings
-from app.utils.github_parser import parse_github_repo_url
-from app.services.github_service import (
+from cybershield_backend.app.config import settings
+from cybershield_backend.app.models.scan import ScanRequest
+from cybershield_backend.app.models.scan_response import ScanResponse
+from cybershield_backend.app.services.ai_service import get_ai_security_findings
+from cybershield_backend.app.services.findings_service import analyze_repository_files
+from cybershield_backend.app.services.finding_normalizer import normalize_findings
+from cybershield_backend.app.services.github_service import (
+    get_github_workflow_files,
+    get_important_files,
     get_repository_metadata,
     get_repository_root_contents,
-    get_important_files,
-    get_github_workflow_files,
 )
+from cybershield_backend.app.utils.github_parser import parse_github_repo_url
 
 router = APIRouter(prefix="/api", tags=["scan"])
+
 
 @router.get("/debug/env")
 def debug_env():
@@ -21,6 +22,7 @@ def debug_env():
         "github_token_loaded": bool(settings.GITHUB_TOKEN),
         "gemini_api_key_loaded": bool(settings.GEMINI_API_KEY),
     }
+
 
 @router.post("/scan", response_model=ScanResponse)
 def scan_repository(payload: ScanRequest):
@@ -35,17 +37,17 @@ def scan_repository(payload: ScanRequest):
     metadata = get_repository_metadata(owner, repo)
     contents = get_repository_root_contents(owner, repo)
     important_files = get_important_files(owner, repo)
-    workflow_files = get_github_workflow_files(owner, repo)    
+    workflow_files = get_github_workflow_files(owner, repo)
 
     simplified_contents = [
         {
             "name": item["name"],
             "type": item["type"],
-            "path": item["path"]
+            "path": item["path"],
         }
         for item in contents
     ]
-    
+
     findings = analyze_repository_files(important_files, simplified_contents, workflow_files)
 
     ai_result = get_ai_security_findings(
@@ -60,7 +62,6 @@ def scan_repository(payload: ScanRequest):
     rule_based_findings = findings
     ai_findings = ai_result["findings"]
     all_findings = normalize_findings(rule_based_findings + ai_findings)
-
 
     findings_summary = {
         "total": len(all_findings),

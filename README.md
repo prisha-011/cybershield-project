@@ -3,4 +3,4 @@
 Backend for the CyberShield Agent project.
 
 ## Run
-uvicorn app.main:app --reload
+uvicorn cybershield_backend.app.main:app --reload
