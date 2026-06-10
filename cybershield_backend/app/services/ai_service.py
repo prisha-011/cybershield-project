@@ -1,13 +1,13 @@
 import json
-
 import requests
 
 from cybershield_backend.app.config import settings
 
 
+GEMINI_MODEL = "gemini-3.5-flash"
 GEMINI_API_URL = (
-    "https://generativelanguage.googleapis.com/v1beta/models/"
-    "gemini-1.5-flash:generateContent"
+    f"https://generativelanguage.googleapis.com/v1beta/models/"
+    f"{GEMINI_MODEL}:generateContent"
 )
 
 
@@ -94,8 +94,11 @@ def get_ai_security_findings(
 
     try:
         response = requests.post(
-            f"{GEMINI_API_URL}?key={settings.GEMINI_API_KEY}",
-            headers={"Content-Type": "application/json"},
+            GEMINI_API_URL,
+            headers={
+                "Content-Type": "application/json",
+                "x-goog-api-key": settings.GEMINI_API_KEY,
+            },
             json={
                 "contents": [
                     {
