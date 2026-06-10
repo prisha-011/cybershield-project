@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+
 from cybershield_backend.app.config import settings
 from cybershield_backend.app.models.scan import ScanCreate
 from cybershield_backend.app.models.scan_response import ScanResponse
@@ -12,18 +13,17 @@ from cybershield_backend.app.services.github_service import (
     get_repository_root_contents,
 )
 from cybershield_backend.app.services.scan_persistence_service import (
-    save_scan_result,
     get_all_saved_scans,
     get_saved_scan_by_id,
+    save_scan_result,
 )
 from cybershield_backend.app.utils.github_parser import parse_github_repo_url
-
 
 router = APIRouter(prefix="/api/scans", tags=["Scans"])
 
 
 @router.get("/debug/env")
-def debug_env():
+async def debug_env():
     return {
         "github_token_loaded": bool(settings.GITHUB_TOKEN),
         "gemini_api_key_loaded": bool(settings.GEMINI_API_KEY),
@@ -60,10 +60,10 @@ async def scan_repository(payload: ScanCreate):
             for item in contents
         ]
 
-        findings = analyze_repository_files(
+        rule_based_findings = analyze_repository_files(
             important_files,
             simplified_contents,
-            workflow_files
+            workflow_files,
         )
 
         ai_result = get_ai_security_findings(
@@ -72,10 +72,9 @@ async def scan_repository(payload: ScanCreate):
             metadata=metadata,
             important_files=important_files,
             workflow_files=workflow_files,
-            rule_findings=findings,
+            rule_findings=rule_based_findings,
         )
 
-        rule_based_findings = findings
         ai_findings = ai_result["findings"]
         all_findings = normalize_findings(rule_based_findings + ai_findings)
 
@@ -88,7 +87,7 @@ async def scan_repository(payload: ScanCreate):
         }
 
         response_data = {
-            "message": "Repository fetched successfully",
+            "message": "Repository scanned successfully",
             "repo_url": str(payload.repo_url),
             "owner": owner,
             "repo": repo,
@@ -115,8 +114,11 @@ async def scan_repository(payload: ScanCreate):
 
         saved_scan = await save_scan_result(response_data)
         response_data["scan_id"] = saved_scan["id"]
+
         return response_data
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
