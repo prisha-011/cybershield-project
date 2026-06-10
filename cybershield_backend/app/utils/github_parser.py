@@ -1,30 +1,22 @@
 from urllib.parse import urlparse
 
 
-def parse_github_repo_url(repo_url: str) -> dict:
-    parsed = urlparse(str(repo_url))
+def parse_github_repo_url(url: str) -> dict:
+    parsed = urlparse(url)
 
-    if parsed.scheme not in ["http", "https"]:
-        raise ValueError("Only HTTP/HTTPS GitHub URLs are supported.")
-
-    if parsed.netloc.lower() != "github.com":
-        raise ValueError("Only github.com repository URLs are allowed.")
+    if parsed.netloc not in {"github.com", "www.github.com"}:
+        raise ValueError("Only GitHub repository URLs are supported")
 
     path_parts = [part for part in parsed.path.strip("/").split("/") if part]
 
     if len(path_parts) < 2:
-        raise ValueError("Invalid GitHub repository URL format.")
+        raise ValueError("Invalid GitHub repository URL")
 
     owner = path_parts[0]
-    repo = path_parts[1]
-
-    if repo.endswith(".git"):
-        repo = repo[:-4]
-
-    normalized_url = f"https://github.com/{owner}/{repo}"
+    repo = path_parts[1].replace(".git", "")
 
     return {
         "owner": owner,
         "repo": repo,
-        "normalized_url": normalized_url
+        "normalized_url": f"https://github.com/{owner}/{repo}"
     }
