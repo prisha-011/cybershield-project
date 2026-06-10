@@ -1,4 +1,5 @@
 import json
+import time
 import requests
 
 from cybershield_backend.app.config import settings
@@ -9,6 +10,7 @@ GEMINI_API_URL = (
     f"https://generativelanguage.googleapis.com/v1beta/models/"
     f"{GEMINI_MODEL}:generateContent"
 )
+MAX_RETRIES = 4
 
 
 def build_ai_prompt(
@@ -92,68 +94,83 @@ def get_ai_security_findings(
         rule_findings=rule_findings,
     )
 
-    try:
-        response = requests.post(
-            GEMINI_API_URL,
-            headers={
-                "Content-Type": "application/json",
-                "x-goog-api-key": settings.GEMINI_API_KEY,
-            },
-            json={
-                "contents": [
-                    {
-                        "parts": [
-                            {"text": prompt}
-                        ]
-                    }
-                ]
-            },
-            timeout=45,
-        )
-        response.raise_for_status()
+    last_error = None
 
-        data = response.json()
-        candidates = data.get("candidates", [])
+    for attempt in range(MAX_RETRIES):
+        try:
+            response = requests.post(
+                GEMINI_API_URL,
+                headers={
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": settings.GEMINI_API_KEY,
+                },
+                json={
+                    "contents": [
+                        {
+                            "parts": [
+                                {"text": prompt}
+                            ]
+                        }
+                    ]
+                },
+                timeout=45,
+            )
 
-        if not candidates:
+            if response.status_code == 503:
+                last_error = f"503 Service Unavailable on attempt {attempt + 1}"
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(2 ** attempt)
+                    continue
+
+            response.raise_for_status()
+
+            data = response.json()
+            candidates = data.get("candidates", [])
+
+            if not candidates:
+                return {
+                    "status": "completed",
+                    "error": None,
+                    "findings": [],
+                }
+
+            text = (
+                candidates[0]
+                .get("content", {})
+                .get("parts", [{}])[0]
+                .get("text", "")
+            )
+
+            findings = extract_json_array(text)
+
+            cleaned_findings = []
+            for finding in findings:
+                if not isinstance(finding, dict):
+                    continue
+
+                cleaned_findings.append({
+                    "severity": str(finding.get("severity", "info")).lower(),
+                    "type": str(finding.get("type", "general")),
+                    "title": str(finding.get("title", "Untitled AI finding")),
+                    "description": str(finding.get("description", "")),
+                    "remediation": finding.get("remediation"),
+                    "source": "ai",
+                })
+
             return {
                 "status": "completed",
                 "error": None,
-                "findings": [],
+                "findings": cleaned_findings,
             }
 
-        text = (
-            candidates[0]
-            .get("content", {})
-            .get("parts", [{}])[0]
-            .get("text", "")
-        )
-
-        findings = extract_json_array(text)
-
-        cleaned_findings = []
-        for finding in findings:
-            if not isinstance(finding, dict):
+        except Exception as e:
+            last_error = str(e)
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(2 ** attempt)
                 continue
 
-            cleaned_findings.append({
-                "severity": str(finding.get("severity", "info")).lower(),
-                "type": str(finding.get("type", "general")),
-                "title": str(finding.get("title", "Untitled AI finding")),
-                "description": str(finding.get("description", "")),
-                "remediation": finding.get("remediation"),
-                "source": "ai",
-            })
-
-        return {
-            "status": "completed",
-            "error": None,
-            "findings": cleaned_findings,
-        }
-
-    except Exception as e:
-        return {
-            "status": "failed",
-            "error": str(e),
-            "findings": [],
-        }
+    return {
+        "status": "failed",
+        "error": last_error,
+        "findings": [],
+    }
