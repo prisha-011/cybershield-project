@@ -76,7 +76,7 @@ async def scan_repository(payload: ScanRequest):
         "info": len([f for f in all_findings if f["severity"] == "info"]),
     }
 
-    return {
+    response_data = {
         "message": "Repository fetched successfully",
         "repo_url": str(payload.repo_url),
         "owner": owner,
@@ -101,3 +101,8 @@ async def scan_repository(payload: ScanRequest):
         "findings_summary": findings_summary,
         "findings": all_findings,
     }
+    
+
+    saved_scan = await save_scan_result(response_data)
+    response_data["scan_id"] = saved_scan["id"]
+    return response_data
