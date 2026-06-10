@@ -39,3 +39,54 @@ async def save_findings(scan_id: str, scan_data: dict):
         saved_findings.append(document)
 
     return saved_findings
+
+
+async def get_findings_by_scan_id(scan_id: str):
+    collection = get_findings_collection()
+
+    if collection is None:
+        raise Exception("Database connection is not available")
+
+    findings = []
+    cursor = collection.find({"scan_id": scan_id}).sort("created_at", -1)
+
+    async for finding in cursor:
+        finding["id"] = str(finding["_id"])
+        del finding["_id"]
+        findings.append(finding)
+
+    return findings
+
+
+async def get_findings_by_repo(owner: str, repo: str):
+    collection = get_findings_collection()
+
+    if collection is None:
+        raise Exception("Database connection is not available")
+
+    findings = []
+    cursor = collection.find({"owner": owner, "repo": repo}).sort("created_at", -1)
+
+    async for finding in cursor:
+        finding["id"] = str(finding["_id"])
+        del finding["_id"]
+        findings.append(finding)
+
+    return findings
+
+
+async def get_high_severity_findings():
+    collection = get_findings_collection()
+
+    if collection is None:
+        raise Exception("Database connection is not available")
+
+    findings = []
+    cursor = collection.find({"severity": "high"}).sort("created_at", -1)
+
+    async for finding in cursor:
+        finding["id"] = str(finding["_id"])
+        del finding["_id"]
+        findings.append(finding)
+
+    return findings
