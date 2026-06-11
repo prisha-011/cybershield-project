@@ -4,8 +4,8 @@ import requests
 
 from cybershield_backend.app.config import settings
 
-
-GEMINI_MODEL = "gemini-3.5-flash"
+# Updated to the globally active, non-deprecated model identifier
+GEMINI_MODEL = "gemini-2.5-flash"
 GEMINI_API_URL = (
     f"https://generativelanguage.googleapis.com/v1beta/models/"
     f"{GEMINI_MODEL}:generateContent"
@@ -111,7 +111,11 @@ def get_ai_security_findings(
                                 {"text": prompt}
                             ]
                         }
-                    ]
+                    ],
+                    # Tells Google to natively output clean, structured JSON 
+                    "generationConfig": {
+                        "responseMimeType": "application/json"
+                    }
                 },
                 timeout=45,
             )
@@ -129,7 +133,7 @@ def get_ai_security_findings(
 
             if not candidates:
                 return {
-                    "status": "completed",
+                    "status": "success",
                     "error": None,
                     "findings": [],
                 }
@@ -158,7 +162,7 @@ def get_ai_security_findings(
                 })
 
             return {
-                "status": "completed",
+                "status": "success",
                 "error": None,
                 "findings": cleaned_findings,
             }
