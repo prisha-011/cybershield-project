@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware  # 1. Add this import
 from cybershield_backend.app.routers.findings import router as findings_router
 from cybershield_backend.app.config import settings
 from cybershield_backend.app.routers.scan import router as scan_router
@@ -17,6 +18,15 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     lifespan=lifespan
+)
+
+# 2. Add the active CORS middleware configuration here (BEFORE routers)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows your frontend to bypass local dev port checks
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(scan_router)

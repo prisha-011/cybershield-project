@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "CyberShield Backend"
     APP_ENV: str = "development"
     GITHUB_TOKEN: str | None = None
+    # OPENROUTER_API_KEY: str | None = None
     GEMINI_API_KEY: str | None = None
 
     model_config = SettingsConfigDict(
@@ -23,7 +24,7 @@ class Settings(BaseSettings):
 
 
 
-# print("Using env file:", ENV_FILE)
-# print("Env file exists:", ENV_FILE.exists())
+print("Using env file:", ENV_FILE)
+print("Env file exists:", ENV_FILE.exists())
 
 settings = Settings()
