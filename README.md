@@ -5,7 +5,7 @@ AI-powered repository analysis platform that combines rule-based security scanni
 ## Demo
 
 <img width="400" height="237" alt="image" src="https://github.com/user-attachments/assets/be0977a1-0c45-415f-9741-01d6dfc23bb1" /> 
-<img width="00" height="237" alt="image" src="https://github.com/user-attachments/assets/4b047c9a-195b-46cf-b825-e99e12627141" />
+<img width="400" height="237" alt="image" src="https://github.com/user-attachments/assets/4b047c9a-195b-46cf-b825-e99e12627141" />
 
 
 ## Features
