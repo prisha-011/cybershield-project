@@ -22,11 +22,11 @@ AI-powered repository analysis platform that combines rule-based security scanni
 |       Architecture      |
 |-------------------------|
 |   Frontend (React)      |
-|           ↓             |
+||          ↓             |
 |   Backend (FastAPI)     |
-|           ↓             |
+||          ↓             |
 | GitHub API + Gemini API |
-|           ↓             |
+||          ↓             |
 |         MongoDB         |
 
 ## Tech Stack
