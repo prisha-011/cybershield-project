@@ -19,6 +19,7 @@ AI-powered repository analysis platform that combines rule-based security scanni
 - Interactive React dashboard
 
 ## Architecture
+|       Architecture      |
 |-------------------------|
 |   Frontend (React)      |
 |           ↓             |
