@@ -21,9 +21,11 @@ AI-powered repository analysis platform that combines rule-based security scanni
 ## Architecture
 ```mermaid
 flowchart TD
-    A["Frontend React"] --> B["Backend FastAPI"]
-    B --> C["GitHub API + Gemini API"]
-    C --> D["MongoDB"]
+    U["User"] --> R["React Frontend"]
+    R --> F["FastAPI Backend"]
+    F --> G["GitHub API"]
+    F --> M["Gemini API"]
+    F --> D["MongoDB"]
 ```
 
 ## Tech Stack
