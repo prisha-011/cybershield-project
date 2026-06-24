@@ -61,10 +61,20 @@ flowchart TD
 | GET    | /api/scans/{id} | Retrieve saved scan |
 | GET    | /api/scans      | List scan history   |
 
+
 ## Team Contributions
-- Backend: repository scanning flow, API design, analysis logic, AI integration, and persistence.
-- Frontend: input flow, scan UX, and result presentation.
-- Built collaboratively as a full-stack security project.
+
+### Prisha Dwivedi
+- Frontend development
+- Dashboard UI/UX
+- System integration
+- MongoDB integration
+
+### Shaurya Singh
+- FastAPI backend
+- Repository scanning engine
+- Gemini integration
+- API architecture
 
 
 
