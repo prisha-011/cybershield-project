@@ -19,15 +19,12 @@ AI-powered repository analysis platform that combines rule-based security scanni
 - Interactive React dashboard
 
 ## Architecture
-|       Architecture      |
-|-------------------------|
-|   Frontend (React)      |
-|.          ↓             |
-|   Backend (FastAPI)     |
-|.          ↓             |
-| GitHub API + Gemini API |
-|.          ↓             |
-|         MongoDB         |
+```mermaid
+flowchart TD
+    A[Frontend (React)] --> B[Backend (FastAPI)]
+    B --> C[GitHub API + Gemini API]
+    C --> D[MongoDB]
+```
 
 ## Tech Stack
 
